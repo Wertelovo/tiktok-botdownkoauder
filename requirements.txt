@@ -1,0 +1,7 @@
+pyTelegramBotAPI
+yt-dlp
+requests
+curl-cffi
+Flask
+gunicorn
+python-dotenv
