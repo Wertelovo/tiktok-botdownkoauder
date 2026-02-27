@@ -38,10 +38,9 @@ def handle_link(message):
 
     try:
         ydl_opts = {
-            'format': 'best[height<=720]',
-            'outtmpl': '%(id)s.%(ext)s',
-            'noplaylist': True,
-            'impersonate': 'chrome:120',
+    'format': 'best[height<=720]',
+    'outtmpl': '%(id)s.%(ext)s',
+    'noplaylist': True,
         }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
