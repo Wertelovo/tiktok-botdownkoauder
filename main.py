@@ -26,6 +26,8 @@ def send_welcome(message):
 
 @bot.message_handler(content_types=['text'])
 def handle_link(message):
+    import traceback  # Добавь импорт в начале функции
+    
     link = message.text
     
     if 'tiktok.com' not in link:
@@ -59,7 +61,19 @@ def handle_link(message):
         bot.delete_message(message.chat.id, status_msg.message_id)
 
     except Exception as e:
-        bot.reply_to(message, f"❌ Ошибка: {e}")
+        # 🔴 ВОТ ЭТО ДОБАВЬ — ошибка появится в логах Render
+        print(f"❌ FULL ERROR: {traceback.format_exc()}")
+        print(f"❌ SHORT ERROR: {str(e)}")
+        
+        # Пользователю показываем упрощённое сообщение
+        error_text = str(e).lower()
+        if "blocked" in error_text:
+            bot.reply_to(message, "❌ TikTok блокирует запрос. Попробуй другую ссылку.")
+        elif "private" in error_text:
+            bot.reply_to(message, "❌ Видео из закрытого аккаунта.")
+        else:
+            bot.reply_to(message, f"❌ Ошибка: {type(e).__name__}")
+        
         try:
             bot.delete_message(message.chat.id, status_msg.message_id)
         except:
