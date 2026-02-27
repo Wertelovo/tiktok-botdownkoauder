@@ -12,7 +12,6 @@ if not TOKEN:
     raise Exception("Токен не найден!")
 
 bot = telebot.TeleBot(TOKEN, threaded=False)
-
 app = Flask(__name__)
 
 # Определяем режим запуска
@@ -27,8 +26,47 @@ def send_welcome(message):
 
 @bot.message_handler(content_types=['text'])
 def handle_link(message):
-    # ... твой код обработки ...
-    pass
+    link = message.text
+    
+    # Простая проверка на ссылку TikTok
+    if 'tiktok.com' not in link:
+        bot.reply_to(message, "Похоже, это не ссылка на TikTok. Отправь правильную ссылку.")
+        return
+
+    status_msg = bot.reply_to(message, "⏳ Скачиваю видео...")
+
+    try:
+        ydl_opts = {
+            'format': 'best[height<=720]',  # Ограничиваем качество для экономии трафика
+            'outtmpl': '%(id)s.%(ext)s',
+            'noplaylist': True,
+            'impersonate': 'chrome:120',  # Обход блокировок TikTok
+        }
+
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(link, download=True)
+            filename = ydl.prepare_filename(info)
+
+        bot.edit_message_text(
+            chat_id=message.chat.id,
+            message_id=status_msg.message_id,
+            text="📤 Отправляю видео..."
+        )
+
+        # Отправка видео
+        with open(filename, 'rb') as video:
+            bot.send_video(message.chat.id, video, caption="🎬 Готово!")
+        
+        # Удаляем временный файл
+        os.remove(filename)
+        bot.delete_message(message.chat.id, status_msg.message_id)
+
+    except Exception as e:
+        bot.reply_to(message, f"❌ Ошибка: {e}")
+        try:
+            bot.delete_message(message.chat.id, status_msg.message_id)
+        except:
+            pass
 
 # ================== ВЕБХУК ДЛЯ TELEGRAM ==================
 
@@ -46,13 +84,11 @@ def index():
 
 if __name__ == '__main__':
     if IS_ON_RENDER:
-        # 🌐 Режим Render
+        # 🌐 Режим Render (Webhook)
         WEBHOOK_URL = f"{RENDER_EXTERNAL_URL}/webhook"
         bot.set_webhook(url=WEBHOOK_URL)
         print(f"🚀 Запуск на Render. Webhook: {WEBHOOK_URL}")
-        # Запускаем Flask-сервер
         app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
-    
     else:
         # 🏠 Локальный режим (Polling)
         bot.remove_webhook()
