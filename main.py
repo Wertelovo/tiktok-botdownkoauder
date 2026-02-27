@@ -26,7 +26,7 @@ def send_welcome(message):
 
 @bot.message_handler(content_types=['text'])
 def handle_link(message):
-    import traceback  # Добавь импорт в начале функции
+    import traceback
     
     link = message.text
     
@@ -38,9 +38,10 @@ def handle_link(message):
 
     try:
         ydl_opts = {
-    'format': 'best[height<=720]',
-    'outtmpl': '%(id)s.%(ext)s',
-    'noplaylist': True,
+            'format': 'bestvideo+bestaudio/best',  # ← Исправлено!
+            'outtmpl': '%(id)s.%(ext)s',
+            'noplaylist': True,
+            'no_warnings': True,
         }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -60,16 +61,16 @@ def handle_link(message):
         bot.delete_message(message.chat.id, status_msg.message_id)
 
     except Exception as e:
-        # 🔴 ВОТ ЭТО ДОБАВЬ — ошибка появится в логах Render
         print(f"❌ FULL ERROR: {traceback.format_exc()}")
         print(f"❌ SHORT ERROR: {str(e)}")
         
-        # Пользователю показываем упрощённое сообщение
         error_text = str(e).lower()
         if "blocked" in error_text:
             bot.reply_to(message, "❌ TikTok блокирует запрос. Попробуй другую ссылку.")
         elif "private" in error_text:
             bot.reply_to(message, "❌ Видео из закрытого аккаунта.")
+        elif "format" in error_text:
+            bot.reply_to(message, "❌ Формат видео недоступен. Попробуй другую ссылку.")
         else:
             bot.reply_to(message, f"❌ Ошибка: {type(e).__name__}")
         
