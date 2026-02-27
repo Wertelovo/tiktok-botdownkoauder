@@ -18,7 +18,7 @@ app = Flask(__name__)
 RENDER_EXTERNAL_URL = os.environ.get('RENDER_EXTERNAL_URL')
 IS_ON_RENDER = RENDER_EXTERNAL_URL is not None
 
-# ================== ОБРАБОТЧИКИ ==================
+# ================== ОБРАБОТЧИКИ TELEGRAM ==================
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
@@ -28,19 +28,18 @@ def send_welcome(message):
 def handle_link(message):
     link = message.text
     
-    # Простая проверка на ссылку TikTok
     if 'tiktok.com' not in link:
-        bot.reply_to(message, "Похоже, это не ссылка на TikTok. Отправь правильную ссылку.")
+        bot.reply_to(message, "Похоже, это не ссылка на TikTok.")
         return
 
     status_msg = bot.reply_to(message, "⏳ Скачиваю видео...")
 
     try:
         ydl_opts = {
-            'format': 'best[height<=720]',  # Ограничиваем качество для экономии трафика
+            'format': 'best[height<=720]',
             'outtmpl': '%(id)s.%(ext)s',
             'noplaylist': True,
-            'impersonate': 'chrome:120',  # Обход блокировок TikTok
+            'impersonate': 'chrome:120',
         }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -53,11 +52,9 @@ def handle_link(message):
             text="📤 Отправляю видео..."
         )
 
-        # Отправка видео
         with open(filename, 'rb') as video:
             bot.send_video(message.chat.id, video, caption="🎬 Готово!")
         
-        # Удаляем временный файл
         os.remove(filename)
         bot.delete_message(message.chat.id, status_msg.message_id)
 
@@ -68,29 +65,31 @@ def handle_link(message):
         except:
             pass
 
-# ================== ВЕБХУК ДЛЯ TELEGRAM ==================
+# ================== FLASK-МАРШРУТЫ (всегда на верхнем уровне!) ==================
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
+    """Обработчик вебхука от Telegram"""
     update = request.get_json()
     bot.process_new_updates([telebot.types.Update.de_json(update)])
     return '', 200
 
 @app.route('/')
 def index():
+    """Проверка, что сервер работает"""
     return 'Bot is running!', 200
 
 # ================== ЗАПУСК ==================
 
 if __name__ == '__main__':
     if IS_ON_RENDER:
-        # 🌐 Режим Render (Webhook)
+        # 🌐 Режим Render: устанавливаем вебхук и запускаем сервер
         WEBHOOK_URL = f"{RENDER_EXTERNAL_URL}/webhook"
         bot.set_webhook(url=WEBHOOK_URL)
         print(f"🚀 Запуск на Render. Webhook: {WEBHOOK_URL}")
-        app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+        # app.run() здесь не используется, так как на Render запускает Gunicorn
     else:
-        # 🏠 Локальный режим (Polling)
+        # 🏠 Локальный режим: отключаем вебхук и запускаем polling
         bot.remove_webhook()
         print("🏠 Запуск локально (Polling)...")
         bot.infinity_polling()
