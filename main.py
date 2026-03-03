@@ -92,19 +92,6 @@ def index():
 # ================== ЗАПУСК ==================
 
 if __name__ == '__main__':
-    RENDER_EXTERNAL_URL = os.environ.get('RENDER_EXTERNAL_URL')
-    IS_ON_RENDER = RENDER_EXTERNAL_URL is not None
-    
-    if IS_ON_RENDER:
-        WEBHOOK_URL = f"{RENDER_EXTERNAL_URL}/webhook"
-        logger.info(f"🚀 Запуск на Render. Webhook: {WEBHOOK_URL}")
-        
-        # Устанавливаем вебхук при старте
-        bot.set_webhook(url=WEBHOOK_URL)
-        
-        # Запускаем Flask
-        app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 10000)))
-    else:
-        logger.info("🏠 Запуск локально (Polling)...")
-        bot.remove_webhook()
-        bot.infinity_polling()
+    logger.info("🏠 Запуск в режиме Polling...")
+    bot.remove_webhook()
+    bot.infinity_polling()
