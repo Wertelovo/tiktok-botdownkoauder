@@ -166,11 +166,16 @@ def process_tiktok_link(message, link):
             info = ydl.extract_info(link, download=True)
             filename = ydl.prepare_filename(info)
         
-        bot.edit_message_text(
-            chat_id=message.chat.id,
-            message_id=status_msg.message_id,
-            text="📤 Отправляю видео..."
-        )
+        # 🔧 ИСПРАВЛЕНИЕ: Безопасное редактирование сообщения
+        try:
+            bot.edit_message_text(
+                chat_id=message.chat.id,
+                message_id=status_msg.message_id,
+                text="📤 Отправляю видео..."
+            )
+        except Exception as edit_error:
+            # Если не удалось отредактировать — не страшно, просто пишем в лог
+            logger.warning(f"⚠️ Не удалось editsровать статус: {edit_error}")
         
         with open(filename, 'rb') as video:
             bot.send_video(message.chat.id, video, caption="🎬 Готово! Приятного просмотра!")
@@ -181,10 +186,15 @@ def process_tiktok_link(message, link):
         stats['users'][user_id] = stats['users'].get(user_id, 0) + 1
         save_stats(stats)
         
-        logger.info(f"✅ Видео скачано. Всего: {stats['total']}, Пользователь {user_id}: {stats['users'][user_id]}")
+        logger.info(f"✅ Видео скачано. Всего: {stats['total']}")
         
         os.remove(filename)
-        bot.delete_message(message.chat.id, status_msg.message_id)
+        
+        # Удаляем сообщение о статусе
+        try:
+            bot.delete_message(message.chat.id, status_msg.message_id)
+        except:
+            pass
         
     except Exception as e:
         logger.error(f"❌ Ошибка: {e}")
